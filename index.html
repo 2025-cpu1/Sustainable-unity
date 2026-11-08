@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="sw">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SUSTAINABLE UNITY | Kikoba Management</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <main id="loginView" class="auth-shell">
+    <section class="auth-card">
+      <div class="brand-mark">SU</div>
+      <p class="eyebrow">SUSTAINABLE UNITY</p>
+      <h1 data-i18n="welcome">Karibu kwenye Kikoba</h1>
+      <p class="muted" data-i18n="loginIntro">Ingia kwa akaunti yako ili kuendelea.</p>
+      <form id="loginForm">
+        <label for="username" data-i18n="username">Jina la mtumiaji</label>
+        <input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="isack">
+        <label for="password" data-i18n="password">Nenosiri</label>
+        <input id="password" type="password" autocomplete="current-password" required placeholder="••••••••">
+        <button id="loginBtn" class="btn primary full" type="submit" data-i18n="login">Ingia</button>
+      </form>
+      <p id="loginMessage" class="message" role="status"></p>
+      <div class="language-switch">
+        <button type="button" class="text-btn" data-lang="sw">Kiswahili</button>
+        <span>·</span>
+        <button type="button" class="text-btn" data-lang="en">English</button>
+      </div>
+      <p class="tiny muted" data-i18n="accessManaged">Access is managed by the system administrator.</p>
+    </section>
+  </main>
+
+  <div id="appView" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="side-brand"><div class="brand-mark small">SU</div><div><b>SUSTAINABLE UNITY</b><small>KIKOBA MANAGEMENT</small></div></div>
+      <nav id="mainNav">
+        <button class="nav-item active" data-page="overview"><span>▦</span><span data-i18n="overview">Muhtasari</span></button>
+        <button class="nav-item" data-page="statement"><span>☰</span><span data-i18n="statement">Taarifa ya mwanachama</span></button>
+        <button class="nav-item" data-page="members"><span>♙</span><span data-i18n="members">Wanachama</span></button>
+        <button class="nav-item" data-page="contributions"><span>＋</span><span data-i18n="contributions">Michango</span></button>
+        <button class="nav-item" data-page="loans"><span>↗</span><span data-i18n="loans">Mikopo</span></button>
+        <button class="nav-item" data-page="repayments"><span>↻</span><span data-i18n="repayments">Marejesho</span></button>
+        <button class="nav-item" data-page="reports"><span>▤</span><span data-i18n="reports">Ripoti</span></button>
+        <button class="nav-item" data-page="users" data-need="admin"><span>⚙</span><span data-i18n="users">Watumiaji</span></button>
+        <button class="nav-item" data-page="account"><span>◉</span><span data-i18n="account">Akaunti yangu</span></button>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span><span data-i18n="connected">Database connection</span></div>
+    </aside>
+
+    <section class="main-area">
+      <header class="topbar">
+        <div><p class="eyebrow">SUSTAINABLE UNITY KIKOBA</p><h2 id="pageTitle">Muhtasari</h2></div>
+        <div class="user-tools">
+          <button class="btn ghost compact" id="langToggle">EN</button>
+          <button class="user-chip" id="userChip" type="button"><div class="avatar">SU</div><div><b id="userName">User</b><small id="userRole">Member</small></div></button>
+          <button class="btn ghost compact" id="logoutBtn" data-i18n="logout">Toka</button>
+        </div>
+      </header>
+
+      <div id="notice" class="notice hidden"></div>
+
+      <!-- OVERVIEW -->
+      <section id="page-overview" class="page">
+        <div class="welcome-row"><div><h3 data-i18n="dashboardWelcome">Karibu kwenye mfumo</h3><p class="muted" data-i18n="dashboardSub">Muhtasari wa shughuli za kikoba.</p></div><span class="period-pill" id="todayLabel"></span></div>
+        <div class="stats-grid">
+          <article class="stat-card"><span data-i18n="memberCount">Wanachama</span><strong id="statMembers">0</strong><small data-i18n="registeredMembers">Waliosajiliwa</small></article>
+          <article class="stat-card"><span data-i18n="contributionsTotal">Michango yote</span><strong id="statContributions">TSh 0</strong><small data-i18n="allCategories">Hisa, jamii, bima na mengine</small></article>
+          <article class="stat-card"><span data-i18n="loansIssued">Mikopo iliyotolewa</span><strong id="statLoans">TSh 0</strong><small data-i18n="loanPrincipal">Jumla ya mitaji ya mikopo</small></article>
+          <article class="stat-card"><span data-i18n="outstanding">Deni lililobaki</span><strong id="statOutstanding">TSh 0</strong><small data-i18n="remainingBalance">Salio la mikopo</small></article>
+        </div>
+        <div class="content-card">
+          <div class="section-heading"><div><h3 data-i18n="recentContributions">Michango ya hivi karibuni</h3><p class="muted" data-i18n="latestEntries">Miamala ya mwisho iliyoingizwa.</p></div><button class="btn secondary" data-goto="contributions" data-i18n="viewAll">Ona yote</button></div>
+          <div class="table-wrap"><table><thead><tr><th data-i18n="date">Tarehe</th><th data-i18n="member">Mwanachama</th><th data-i18n="category">Aina</th><th class="num" data-i18n="amount">Kiasi</th></tr></thead><tbody id="recentRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- MEMBER STATEMENT -->
+      <section id="page-statement" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="statementTitle">Taarifa ya mwanachama</h3><p class="muted" data-i18n="statementSub">Michango yote, mikopo na salio la mwanachama mmoja.</p></div><button class="btn secondary" id="stPrint" data-i18n="print">Chapisha / PDF</button></div>
+        <div class="form-grid single" id="stMemberWrap" data-need="staff">
+          <div><label for="stMember" data-i18n="member">Mwanachama</label><select id="stMember"></select></div>
+        </div>
+        <div id="stBody"></div>
+      </section>
+
+      <!-- MEMBERS -->
+      <section id="page-members" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="memberRegister">Daftari la wanachama</h3><p class="muted" data-i18n="memberRegisterSub">Sajili na angalia wanachama hadi 30.</p></div></div>
+        <form id="memberForm" class="form-grid" data-need="members">
+          <div><label data-i18n="memberCode">Namba ya mwanachama</label><input id="memberCode" placeholder="SU001" pattern="[Ss][Uu][0-9]{3}" title="SU001" required></div>
+          <div><label data-i18n="fullName">Jina kamili</label><input id="memberName" required></div>
+          <div><label data-i18n="phone">Simu</label><input id="memberPhone" type="tel"></div>
+          <div><label data-i18n="emailOptional">Barua pepe (si lazima)</label><input id="memberEmail" type="email"></div>
+          <button class="btn primary" type="submit" data-i18n="saveMember">Hifadhi mwanachama</button>
+        </form>
+        <label class="check" data-need="members"><input type="checkbox" id="showInactive"> <span data-i18n="showInactive">Onyesha waliotoka</span></label>
+        <div class="content-card"><div class="table-wrap"><table><thead><tr><th>#</th><th data-i18n="memberCode">Namba</th><th data-i18n="fullName">Jina</th><th data-i18n="phone">Simu</th><th data-i18n="status">Hali</th><th data-need="members"></th></tr></thead><tbody id="memberRows"></tbody></table></div></div>
+      </section>
+
+      <!-- CONTRIBUTIONS -->
+      <section id="page-contributions" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="recordContribution">Ingiza mchango</h3><p class="muted" data-i18n="contributionSub">Hifadhi michango ya kila mwanachama.</p></div></div>
+        <form id="contributionForm" class="form-grid" data-need="write">
+          <div><label data-i18n="member">Mwanachama</label><select id="contributionMember" required></select></div>
+          <div><label data-i18n="category">Aina ya mchango</label><select id="contributionCategory" required></select></div>
+          <div><label data-i18n="amountTsh">Kiasi (TSh)</label><input id="contributionAmount" type="number" min="1" step="1" required></div>
+          <div><label data-i18n="date">Tarehe</label><input id="contributionDate" type="date" required></div>
+          <div class="span-2"><label data-i18n="description">Maelezo</label><input id="contributionNotes"></div>
+          <button class="btn primary" type="submit" data-i18n="saveContribution">Hifadhi mchango</button>
+        </form>
+        <div class="content-card"><div class="table-wrap"><table><thead><tr><th data-i18n="date">Tarehe</th><th data-i18n="member">Mwanachama</th><th data-i18n="category">Aina</th><th class="num" data-i18n="amount">Kiasi</th><th data-i18n="description">Maelezo</th><th data-need="admin"></th></tr></thead><tbody id="contributionRows"></tbody></table></div></div>
+      </section>
+
+      <!-- LOANS -->
+      <section id="page-loans" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="registerLoan">Sajili mkopo</h3><p class="muted" data-i18n="loanSub">Rekodi mikopo ya wanachama.</p></div></div>
+        <form id="loanForm" class="form-grid" data-need="write">
+          <div><label data-i18n="member">Mwanachama</label><select id="loanMember" required></select></div>
+          <div><label data-i18n="loanAmount">Kiasi cha mkopo (TSh)</label><input id="loanAmount" type="number" min="1" required></div>
+          <div><label data-i18n="interestRate">Riba (%)</label><input id="loanRate" type="number" min="0" step="0.01" value="8" required></div>
+          <div><label data-i18n="insuranceRate">Bima (%)</label><input id="loanInsurance" type="number" min="0" step="0.01" value="2" required></div>
+          <div><label data-i18n="loanDate">Tarehe ya mkopo</label><input id="loanDate" type="date" required></div>
+          <div><label data-i18n="weeks">Wiki za marejesho</label><input id="loanWeeks" type="number" min="1" step="1" value="12" required></div>
+          <div class="span-2"><label data-i18n="description">Maelezo</label><input id="loanNotes"></div>
+          <div class="span-2 preview" id="loanPreview"></div>
+          <button class="btn primary" type="submit" data-i18n="saveLoan">Hifadhi mkopo</button>
+        </form>
+        <div class="content-card"><div class="table-wrap"><table><thead><tr><th data-i18n="date">Tarehe</th><th data-i18n="member">Mwanachama</th><th data-i18n="loan">Mkopo</th><th class="num" data-i18n="loanAmount2">Kiasi</th><th class="num" data-i18n="interest">Riba</th><th class="num" data-i18n="insurance">Bima</th><th class="num" data-i18n="totalDue">Jumla ya kulipa</th><th class="num" data-i18n="balance">Salio</th><th class="num" data-i18n="installment">Kila wiki</th><th data-i18n="dueDate">Mwisho</th></tr></thead><tbody id="loanRows"></tbody></table></div></div>
+      </section>
+
+      <!-- REPAYMENTS -->
+      <section id="page-repayments" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="recordRepayment">Ingiza marejesho</h3><p class="muted" data-i18n="repaymentSub">Rekodi malipo ya mkopo.</p></div></div>
+        <form id="repaymentForm" class="form-grid" data-need="write">
+          <div><label data-i18n="loan">Mkopo</label><select id="repaymentLoan" required></select></div>
+          <div><label data-i18n="amountTsh">Kiasi (TSh)</label><input id="repaymentAmount" type="number" min="1" required></div>
+          <div><label data-i18n="date">Tarehe</label><input id="repaymentDate" type="date" required></div>
+          <div><label data-i18n="description">Maelezo</label><input id="repaymentNotes"></div>
+          <button class="btn primary" type="submit" data-i18n="saveRepayment">Hifadhi marejesho</button>
+        </form>
+        <div class="content-card"><div class="table-wrap"><table><thead><tr><th data-i18n="date">Tarehe</th><th data-i18n="member">Mwanachama</th><th data-i18n="loan">Mkopo</th><th class="num" data-i18n="amount">Kiasi</th><th data-i18n="description">Maelezo</th></tr></thead><tbody id="repaymentRows"></tbody></table></div></div>
+      </section>
+
+      <!-- REPORTS -->
+      <section id="page-reports" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="financialReports">Ripoti za kifedha</h3><p class="muted" data-i18n="reportsSub">Muhtasari wa jumla kutoka kwenye database.</p></div><div class="btn-row"><button class="btn secondary" id="csvBtn" data-i18n="exportCsv">Pakua CSV (Excel)</button><button class="btn secondary" id="printBtn" data-i18n="print">Chapisha / PDF</button></div></div>
+        <div class="stats-grid report-stats">
+          <article class="stat-card"><span data-i18n="cat_HISA">Hisa</span><strong id="rHisa">TSh 0</strong></article>
+          <article class="stat-card"><span data-i18n="cat_JAMII">Jamii</span><strong id="rJamii">TSh 0</strong></article>
+          <article class="stat-card"><span data-i18n="cat_BIMA">Bima</span><strong id="rBima">TSh 0</strong></article>
+          <article class="stat-card"><span data-i18n="cat_SHEREHE">Sherehe</span><strong id="rSherehe">TSh 0</strong></article>
+          <article class="stat-card"><span data-i18n="cat_FAINI">Adhabu</span><strong id="rAdhabu">TSh 0</strong></article>
+          <article class="stat-card"><span data-i18n="cat_UWEKEZAJI">Uwekezaji</span><strong id="rUwekezaji">TSh 0</strong></article>
+        </div>
+        <div class="content-card">
+          <div class="section-heading"><div><h3 data-i18n="matrixTitle">Michango kwa kila mwanachama</h3><p class="muted" data-i18n="matrixSub">Hisa, jamii, adhabu na zingine, pamoja na deni la mkopo.</p></div></div>
+          <div class="table-wrap"><table id="matrixTable"><thead id="matrixHead"></thead><tbody id="matrixRows"></tbody><tfoot id="matrixFoot"></tfoot></table></div>
+        </div>
+        <div class="content-card"><h3 data-i18n="reportNote">Taarifa muhimu</h3><p class="muted" data-i18n="reportDisclaimer">Ripoti hizi zinakusanywa kutoka kwenye miamala iliyohifadhiwa. Hakikisha miamala imehakikiwa kabla ya kutumia ripoti rasmi.</p><p id="reportGenerated" class="tiny muted"></p></div>
+      </section>
+
+      <!-- USERS (ADMIN) -->
+      <section id="page-users" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="usersTitle">Watumiaji wa mfumo</h3><p class="muted" data-i18n="usersSub">Tengeneza akaunti, badilisha majukumu, unganisha na mwanachama, weka nenosiri jipya.</p></div></div>
+        <form id="userForm" class="form-grid" data-need="admin" autocomplete="off">
+          <div><label data-i18n="username">Jina la mtumiaji</label><input id="newUsername" placeholder="juma.m" pattern="[a-z0-9._\-]{3,40}" autocapitalize="none" required></div>
+          <div><label data-i18n="fullName">Jina kamili</label><input id="newDisplayName" required></div>
+          <div><label data-i18n="role">Jukumu</label><select id="newRole"></select></div>
+          <div><label data-i18n="linkedMember">Mwanachama anayehusika</label><select id="newMember"></select></div>
+          <div class="span-2"><label data-i18n="tempPassword">Nenosiri la muda (herufi 8+)</label><div class="inline"><input id="newPassword" type="text" minlength="8" maxlength="72" required autocomplete="off"><button type="button" class="btn ghost" id="genPw" data-i18n="generate">Tengeneza</button></div></div>
+          <button class="btn primary" type="submit" data-i18n="createUser">Tengeneza akaunti</button>
+        </form>
+        <div id="userResult" class="notice success hidden"></div>
+        <div class="content-card"><div class="table-wrap"><table><thead><tr><th data-i18n="username">Username</th><th data-i18n="fullName">Jina</th><th data-i18n="role">Jukumu</th><th data-i18n="linkedMember">Mwanachama</th><th data-i18n="status">Hali</th><th></th></tr></thead><tbody id="userRows"></tbody></table></div></div>
+      </section>
+
+      <!-- MY ACCOUNT -->
+      <section id="page-account" class="page hidden">
+        <div class="section-heading"><div><h3 data-i18n="accountTitle">Akaunti yangu</h3><p class="muted" data-i18n="accountSub">Badilisha nenosiri lako.</p></div></div>
+        <form id="pwForm" class="form-grid" autocomplete="off">
+          <div><label data-i18n="newPassword">Nenosiri jipya</label><input id="pw1" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div>
+          <div><label data-i18n="confirmPassword">Rudia nenosiri</label><input id="pw2" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></div>
+          <button class="btn primary" type="submit" data-i18n="changePassword">Badilisha nenosiri</button>
+        </form>
+      </section>
+
+      <footer class="footer">SUSTAINABLE UNITY KIKOBA · <span data-i18n="secureWorkspace">Secure member workspace</span></footer>
+    </section>
+  </div>
+
+  <dialog id="editDialog">
+    <form id="editForm" method="dialog" class="dialog-form">
+      <h3 data-i18n="editMember">Hariri mwanachama</h3>
+      <label data-i18n="fullName">Jina kamili</label><input id="editName" required>
+      <label data-i18n="phone">Simu</label><input id="editPhone" type="tel">
+      <label data-i18n="emailOptional">Barua pepe</label><input id="editEmail" type="email">
+      <label class="check"><input type="checkbox" id="editActive"> <span data-i18n="activeMember">Mwanachama hai</span></label>
+      <div class="btn-row"><button type="button" class="btn ghost" id="editCancel" data-i18n="cancel">Ghairi</button><button type="submit" class="btn primary" data-i18n="save">Hifadhi</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
