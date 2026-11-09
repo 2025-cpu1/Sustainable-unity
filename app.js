@@ -4,7 +4,7 @@
 const SUPABASE_URL = "https://sywizfswnfcbkxemwgek.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_u1PA6HvKWcuDwYwPUomzBg_QL2mngAe";
 
-const CATS = ["HISA", "JAMII", "BIMA", "SHEREHE", "FAINI", "UWEKEZAJI"];
+const CATS = ["HISA", "JAMII", "BIMA", "SHEREHE", "ADHABU", "UWEKEZAJI"];
 const ROLES = ["admin", "treasurer", "secretary", "member"];
 const STAFF = ["admin", "treasurer", "secretary"];
 
@@ -13,7 +13,7 @@ const db = sbReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 
 const $ = id => document.getElementById(id);
 let currentUser = null, profile = null;
-let members = [], contributions = [], loans = [], repayments = [], memberRepaymentHistory = [], users = [];
+let members = [], contributions = [], loans = [], repayments = [], memberRepaymentHistory = [], openingBalances = [], users = [];
 let lang = "sw";
 try { lang = localStorage.getItem("su_lang") || "sw"; } catch (_) {}
 
@@ -39,8 +39,8 @@ const dict = {
     loanPreview: "Riba {i} + Bima {b} = Jumla ya kulipa {t} (takriban {w} kila wiki)",
     recordRepayment: "Ingiza marejesho", repaymentSub: "Rekodi malipo ya mkopo.", loan: "Mkopo", saveRepayment: "Hifadhi marejesho",
     financialReports: "Ripoti za kifedha", reportsSub: "Muhtasari wa jumla kutoka kwenye database.", print: "Chapisha / PDF", exportCsv: "Pakua CSV (Excel)",
-    cat_HISA: "Hisa", cat_JAMII: "Jamii", cat_BIMA: "Bima", cat_SHEREHE: "Sherehe", cat_FAINI: "Adhabu", cat_UWEKEZAJI: "Uwekezaji",
-    matrixTitle: "Michango kwa kila mwanachama", matrixSub: "Hisa, jamii, faini na zingine, pamoja na deni la mkopo.", total: "Jumla", loanBalance: "Deni la mkopo",
+    cat_HISA: "Hisa", cat_JAMII: "Jamii", cat_BIMA: "Bima", cat_SHEREHE: "Sherehe", cat_ADHABU: "Adhabu", cat_UWEKEZAJI: "Uwekezaji",
+    matrixTitle: "Michango kwa kila mwanachama", matrixSub: "Hisa, jamii, adhabu na zingine, pamoja na deni la mkopo.", total: "Jumla", loanBalance: "Deni la mkopo",
     reportNote: "Taarifa muhimu", reportDisclaimer: "Ripoti hizi zinakusanywa kutoka kwenye miamala iliyohifadhiwa. Hakikisha miamala imehakikiwa kabla ya kutumia ripoti rasmi.", generated: "Imetengenezwa",
     usersTitle: "Watumiaji wa mfumo", usersSub: "Tengeneza akaunti, badilisha majukumu, unganisha na mwanachama, weka nenosiri jipya.",
     role: "Jukumu", linkedMember: "Mwanachama anayehusika", tempPassword: "Nenosiri la muda (herufi 8+)", generate: "Tengeneza", createUser: "Tengeneza akaunti", none: "— hakuna —",
@@ -77,7 +77,7 @@ const dict = {
     loanPreview: "Interest {i} + Insurance {b} = Total due {t} (about {w} per week)",
     recordRepayment: "Record repayment", repaymentSub: "Record loan payments.", loan: "Loan", saveRepayment: "Save repayment",
     financialReports: "Financial reports", reportsSub: "Overall summary from the database.", print: "Print / PDF", exportCsv: "Download CSV (Excel)",
-    cat_HISA: "Shares", cat_JAMII: "Community", cat_BIMA: "Insurance", cat_SHEREHE: "Celebration", cat_FAINI: "Penalties", cat_UWEKEZAJI: "Investment",
+    cat_HISA: "Shares", cat_JAMII: "Community", cat_BIMA: "Insurance", cat_SHEREHE: "Celebration", cat_ADHABU: "Fines", cat_UWEKEZAJI: "Investment",
     matrixTitle: "Contributions per member", matrixSub: "Shares, community, fines and more, plus loan balance.", total: "Total", loanBalance: "Loan balance",
     reportNote: "Important information", reportDisclaimer: "Reports are calculated from saved transactions. Verify transactions before using an official report.", generated: "Generated",
     usersTitle: "System users", usersSub: "Create accounts, change roles, link to a member, set a new password.",
@@ -215,17 +215,18 @@ function applyPermissions() {
 
 /* ---------------- data ---------------- */
 async function refreshData() {
-  const [m, c, l, r, h] = await Promise.all([
+  const [m, c, l, r, h, o] = await Promise.all([
     db.from("members").select("*").order("member_code"),
     db.from("contributions").select("*").order("contribution_date", { ascending: false }).order("created_at", { ascending: false }).limit(5000),
     db.from("loans").select("*").order("loan_date", { ascending: false }).limit(2000),
     db.from("repayments").select("*").order("repayment_date", { ascending: false }).limit(5000),
-    db.from("member_repayment_history").select("*").order("repayment_date", { ascending: false }).limit(5000)
+    db.from("member_repayment_history").select("*").order("repayment_date", { ascending: false }).limit(5000),
+    db.from("su_import_opening_balances").select("*").eq("period_label", "HISTORIA_2024_2025")
   ]);
-  const bad = [m, c, l, r, h].find(x => x.error);
+  const bad = [m, c, l, r, h, o].find(x => x.error);
   if (bad) { showNotice(tr("dbError") + bad.error.message); return; }
   hideNotice();
-  members = m.data || []; contributions = c.data || []; loans = l.data || []; repayments = r.data || []; memberRepaymentHistory = h.data || [];
+  members = m.data || []; contributions = c.data || []; loans = l.data || []; repayments = r.data || []; memberRepaymentHistory = h.data || []; openingBalances = o.data || [];
   renderAll();
 }
 
@@ -243,7 +244,7 @@ function renderAll() {
 
 function renderOverview() {
   $("statMembers").textContent = activeMembers().length;
-  $("statContributions").textContent = money(sum(contributions, x => x.amount));
+  $("statContributions").textContent = money(sum(contributions, x => x.amount) + sum(openingBalances, x => x.opening_total));
   $("statLoans").textContent = money(sum(loans, x => x.principal));
   $("statOutstanding").textContent = money(sum(loans, loanBalance));
   $("recentRows").innerHTML = contributions.slice(0, 7).map(x =>
@@ -280,16 +281,35 @@ function renderRepayments() {
   }).join("") || emptyRow(5);
 }
 
+function openingRowsForMember(memberId) {
+  const member = memberById(memberId);
+  if (!member) return [];
+  return openingBalances.filter(x => x.member_code === member.member_code);
+}
+
+function historicalMemberTotal(memberId) {
+  return sum(openingRowsForMember(memberId), x => x.opening_total);
+}
+
 function memberTotals(memberId) {
-  const t = {}; CATS.forEach(c => { t[c] = sum(contributions.filter(x => x.member_id === memberId && x.category === c), x => x.amount); });
+  const history = openingRowsForMember(memberId);
+  const t = {};
+  CATS.forEach(c => {
+    const historicField = c === "ADHABU" ? "faini" : c.toLowerCase();
+    t[c] = sum(contributions.filter(x => x.member_id === memberId && x.category === c), x => x.amount)
+      + sum(history, x => x[historicField]);
+  });
   t.total = CATS.reduce((s, c) => s + t[c], 0);
   t.loan = sum(loans.filter(l => l.member_id === memberId), loanBalance);
   return t;
 }
 
 function renderReports() {
-  const ids = { HISA: "rHisa", JAMII: "rJamii", BIMA: "rBima", SHEREHE: "rSherehe", FAINI: "rAdhabu", UWEKEZAJI: "rUwekezaji" };
-  CATS.forEach(c => { $(ids[c]).textContent = money(sum(contributions.filter(x => x.category === c), x => x.amount)); });
+  const ids = { HISA: "rHisa", JAMII: "rJamii", BIMA: "rBima", SHEREHE: "rSherehe", ADHABU: "rAdhabu", UWEKEZAJI: "rUwekezaji" };
+  CATS.forEach(c => {
+    const historicField = c === "ADHABU" ? "faini" : c.toLowerCase();
+    $(ids[c]).textContent = money(sum(contributions.filter(x => x.category === c), x => x.amount) + sum(openingBalances, x => x[historicField]));
+  });
   $("matrixHead").innerHTML = `<tr><th>#</th><th>${esc(tr("memberCode"))}</th><th>${esc(tr("fullName"))}</th>${CATS.map(c => `<th class="num">${esc(tr("cat_" + c))}</th>`).join("")}<th class="num">${esc(tr("total"))}</th><th class="num">${esc(tr("loanBalance"))}</th></tr>`;
   const list = activeMembers();
   const rows = list.map(m => ({ m, t: memberTotals(m.id) }));
@@ -322,7 +342,7 @@ function renderStatement() {
   const cs = contributions.filter(x => x.member_id === m.id);
   const ls = loans.filter(l => l.member_id === m.id);
   wrap.innerHTML =
-    `<div class="content-card"><h3>${esc(m.member_code)} — ${esc(m.full_name)}</h3><p class="muted">${esc(m.phone || "")}</p></div>` +
+    `<div class="content-card"><h3>${esc(m.member_code)} — ${esc(m.full_name)}</h3><p class="muted">${esc(m.phone || "")}</p><p class="muted">${lang === "sw" ? "Salio la historia (2024–2025)" : "Historical opening balance (2024–2025)"}: <strong>${money(historicalMemberTotal(m.id))}</strong></p></div>` +
     `<div class="stats-grid report-stats">${CATS.map(c => `<article class="stat-card"><span>${esc(tr("cat_" + c))}</span><strong>${money(t[c])}</strong></article>`).join("")}` +
     `<article class="stat-card accent"><span>${esc(tr("totalContrib"))}</span><strong>${money(t.total)}</strong></article>` +
     `<article class="stat-card accent"><span>${esc(tr("loanBalance"))}</span><strong>${money(t.loan)}</strong></article></div>` +
