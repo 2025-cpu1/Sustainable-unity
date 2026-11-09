@@ -4,7 +4,7 @@
 const SUPABASE_URL = "https://sywizfswnfcbkxemwgek.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_u1PA6HvKWcuDwYwPUomzBg_QL2mngAe";
 
-const CATS = ["HISA", "JAMII", "BIMA", "SHEREHE", "ADHABU", "UWEKEZAJI"];
+const CATS = ["HISA", "JAMII", "BIMA", "SHEREHE", "FAINI", "UWEKEZAJI"];
 const ROLES = ["admin", "treasurer", "secretary", "member"];
 const STAFF = ["admin", "treasurer", "secretary"];
 
@@ -39,7 +39,7 @@ const dict = {
     loanPreview: "Riba {i} + Bima {b} = Jumla ya kulipa {t} (takriban {w} kila wiki)",
     recordRepayment: "Ingiza marejesho", repaymentSub: "Rekodi malipo ya mkopo.", loan: "Mkopo", saveRepayment: "Hifadhi marejesho",
     financialReports: "Ripoti za kifedha", reportsSub: "Muhtasari wa jumla kutoka kwenye database.", print: "Chapisha / PDF", exportCsv: "Pakua CSV (Excel)",
-    cat_HISA: "Hisa", cat_JAMII: "Jamii", cat_BIMA: "Bima", cat_SHEREHE: "Sherehe", cat_ADHABU: "Adhabu", cat_UWEKEZAJI: "Uwekezaji",
+    cat_HISA: "Hisa", cat_JAMII: "Jamii", cat_BIMA: "Bima", cat_SHEREHE: "Sherehe", cat_FAINI: "Faini", cat_UWEKEZAJI: "Uwekezaji",
     matrixTitle: "Michango kwa kila mwanachama", matrixSub: "Hisa, jamii, adhabu na zingine, pamoja na deni la mkopo.", total: "Jumla", loanBalance: "Deni la mkopo",
     reportNote: "Taarifa muhimu", reportDisclaimer: "Ripoti hizi zinakusanywa kutoka kwenye miamala iliyohifadhiwa. Hakikisha miamala imehakikiwa kabla ya kutumia ripoti rasmi.", generated: "Imetengenezwa",
     usersTitle: "Watumiaji wa mfumo", usersSub: "Tengeneza akaunti, badilisha majukumu, unganisha na mwanachama, weka nenosiri jipya.",
@@ -77,7 +77,7 @@ const dict = {
     loanPreview: "Interest {i} + Insurance {b} = Total due {t} (about {w} per week)",
     recordRepayment: "Record repayment", repaymentSub: "Record loan payments.", loan: "Loan", saveRepayment: "Save repayment",
     financialReports: "Financial reports", reportsSub: "Overall summary from the database.", print: "Print / PDF", exportCsv: "Download CSV (Excel)",
-    cat_HISA: "Shares", cat_JAMII: "Community", cat_BIMA: "Insurance", cat_SHEREHE: "Celebration", cat_ADHABU: "Fines", cat_UWEKEZAJI: "Investment",
+    cat_HISA: "Shares", cat_JAMII: "Community", cat_BIMA: "Insurance", cat_SHEREHE: "Celebration", cat_FAINI: "Fines", cat_UWEKEZAJI: "Investment",
     matrixTitle: "Contributions per member", matrixSub: "Shares, community, fines and more, plus loan balance.", total: "Total", loanBalance: "Loan balance",
     reportNote: "Important information", reportDisclaimer: "Reports are calculated from saved transactions. Verify transactions before using an official report.", generated: "Generated",
     usersTitle: "System users", usersSub: "Create accounts, change roles, link to a member, set a new password.",
@@ -295,7 +295,7 @@ function memberTotals(memberId) {
   const history = openingRowsForMember(memberId);
   const t = {};
   CATS.forEach(c => {
-    const historicField = c === "ADHABU" ? "faini" : c.toLowerCase();
+    const historicField = c === "FAINI" ? "faini" : c.toLowerCase();
     t[c] = sum(contributions.filter(x => x.member_id === memberId && x.category === c), x => x.amount)
       + sum(history, x => x[historicField]);
   });
@@ -305,9 +305,9 @@ function memberTotals(memberId) {
 }
 
 function renderReports() {
-  const ids = { HISA: "rHisa", JAMII: "rJamii", BIMA: "rBima", SHEREHE: "rSherehe", ADHABU: "rAdhabu", UWEKEZAJI: "rUwekezaji" };
+  const ids = { HISA: "rHisa", JAMII: "rJamii", BIMA: "rBima", SHEREHE: "rSherehe", FAINI: "rFaini", UWEKEZAJI: "rUwekezaji" };
   CATS.forEach(c => {
-    const historicField = c === "ADHABU" ? "faini" : c.toLowerCase();
+    const historicField = c === "FAINI" ? "faini" : c.toLowerCase();
     $(ids[c]).textContent = money(sum(contributions.filter(x => x.category === c), x => x.amount) + sum(openingBalances, x => x[historicField]));
   });
   $("matrixHead").innerHTML = `<tr><th>#</th><th>${esc(tr("memberCode"))}</th><th>${esc(tr("fullName"))}</th>${CATS.map(c => `<th class="num">${esc(tr("cat_" + c))}</th>`).join("")}<th class="num">${esc(tr("total"))}</th><th class="num">${esc(tr("loanBalance"))}</th></tr>`;
