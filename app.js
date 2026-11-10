@@ -14,6 +14,7 @@ const db = sbReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KE
 const $ = id => document.getElementById(id);
 let currentUser = null, profile = null;
 let members = [], contributions = [], loans = [], repayments = [], memberRepaymentHistory = [], openingBalances = [], users = [];
+let financialReportTotals = null;
 let lang = "sw";
 try { lang = localStorage.getItem("su_lang") || "sw"; } catch (_) {}
 
@@ -215,18 +216,20 @@ function applyPermissions() {
 
 /* ---------------- data ---------------- */
 async function refreshData() {
-  const [m, c, l, r, h, o] = await Promise.all([
+  const [m, c, l, r, h, o, ft] = await Promise.all([
     db.from("members").select("*").order("member_code"),
     db.from("contributions").select("*").order("contribution_date", { ascending: false }).order("created_at", { ascending: false }).limit(5000),
     db.from("loans").select("*").order("loan_date", { ascending: false }).limit(2000),
     db.from("repayments").select("*").order("repayment_date", { ascending: false }).limit(5000),
     db.from("member_repayment_history").select("*").order("repayment_date", { ascending: false }).limit(5000),
-    db.from("su_import_opening_balances").select("*").eq("period_label", "HISTORIA_2024_2025")
+    db.from("su_import_opening_balances").select("*").eq("period_label", "HISTORIA_2024_2025"),
+    db.from("su_financial_report_totals").select("*").single()
   ]);
-  const bad = [m, c, l, r, h, o].find(x => x.error);
+  const bad = [m, c, l, r, h, o, ft].find(x => x.error);
   if (bad) { showNotice(tr("dbError") + bad.error.message); return; }
   hideNotice();
   members = m.data || []; contributions = c.data || []; loans = l.data || []; repayments = r.data || []; memberRepaymentHistory = h.data || []; openingBalances = o.data || [];
+  financialReportTotals = ft.data || null;
   renderAll();
 }
 
@@ -244,7 +247,7 @@ function renderAll() {
 
 function renderOverview() {
   $("statMembers").textContent = activeMembers().length;
-  $("statContributions").textContent = money(sum(contributions, x => x.amount) + sum(openingBalances, x => x.opening_total));
+  $("statContributions").textContent = money(financialReportTotals?.jumla_kuu ?? (sum(contributions, x => x.amount) + sum(openingBalances, x => x.opening_total)));
   $("statLoans").textContent = money(sum(loans, x => x.principal));
   $("statOutstanding").textContent = money(sum(loans, loanBalance));
   $("recentRows").innerHTML = contributions.slice(0, 7).map(x =>
@@ -307,8 +310,10 @@ function memberTotals(memberId) {
 function renderReports() {
   const ids = { HISA: "rHisa", JAMII: "rJamii", BIMA: "rBima", SHEREHE: "rSherehe", FAINI: "rFaini", UWEKEZAJI: "rUwekezaji" };
   CATS.forEach(c => {
-    const historicField = c === "FAINI" ? "faini" : c.toLowerCase();
-    $(ids[c]).textContent = money(sum(contributions.filter(x => x.category === c), x => x.amount) + sum(openingBalances, x => x[historicField]));
+    const viewField = c.toLowerCase();
+    const historicField = c === "FAINI" ? "faini" : viewField;
+    const calculated = sum(contributions.filter(x => x.category === c), x => x.amount) + sum(openingBalances, x => x[historicField]);
+    $(ids[c]).textContent = money(financialReportTotals?.[viewField] ?? calculated);
   });
   $("matrixHead").innerHTML = `<tr><th>#</th><th>${esc(tr("memberCode"))}</th><th>${esc(tr("fullName"))}</th>${CATS.map(c => `<th class="num">${esc(tr("cat_" + c))}</th>`).join("")}<th class="num">${esc(tr("total"))}</th><th class="num">${esc(tr("loanBalance"))}</th></tr>`;
   const list = activeMembers();
